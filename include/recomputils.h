@@ -2,7 +2,7 @@
 #define __RECOMPUTILS_H__
 
 #include "modding.h"
-#include "libultra/include/PR/ultratypes.h"
+#include "PR/ultratypes.h"
 
 RECOMP_IMPORT("*", void* recomp_alloc(unsigned long size));
 RECOMP_IMPORT("*", void recomp_free(void* memory));
