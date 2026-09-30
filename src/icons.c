@@ -129,6 +129,67 @@ static int first_sprite(Sheet* s, u16 anim) {
     return le16(frame + 4);                       // BitmapMetadata.spritesheetIndex
 }
 
+// The decoded icons are razor-sharp next to the game's filtered, slightly muddy N64 art. "Weather"
+// them to match: pull saturation and contrast toward a warm mid-tone, then blend in a 3x3 blur so
+// edges soften the way they do under the N64's bilinear filtering.
+#define WEATHER_DESATURATE 0.22f
+#define WEATHER_FLATTEN    0.12f   // blend toward the mid-tone below (lifts blacks, dims whites)
+#define WEATHER_SOFTEN     0.35f   // how much of the blurred image to mix back in
+
+static void weather_icon(u8* rgba, int w, int h) {
+    static const float mid[3] = { 150.0f, 132.0f, 110.0f };
+    u8* src = recomp_alloc(w * h * 4);
+    for (int i = 0; i < w * h * 4; i++) {
+        src[i] = rgba[i];
+    }
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            // 3x3 blur, weighting colour by alpha so transparent pixels don't bleed black into edges.
+            float sum[3] = { 0, 0, 0 };
+            float alpha_sum = 0, weight_sum = 0;
+            for (int dy = -1; dy <= 1; dy++) {
+                for (int dx = -1; dx <= 1; dx++) {
+                    int sx = x + dx, sy = y + dy;
+                    if (sx < 0 || sy < 0 || sx >= w || sy >= h) {
+                        weight_sum += 1.0f;
+                        continue;
+                    }
+                    const u8* p = src + (sy * w + sx) * 4;
+                    float a = p[3] / 255.0f;
+                    sum[0] += p[0] * a;
+                    sum[1] += p[1] * a;
+                    sum[2] += p[2] * a;
+                    alpha_sum += a;
+                    weight_sum += 1.0f;
+                }
+            }
+
+            const u8* s = src + (y * w + x) * 4;
+            u8* d = rgba + (y * w + x) * 4;
+            float blur_a = alpha_sum / weight_sum;
+            float a = s[3] / 255.0f * (1.0f - WEATHER_SOFTEN) + blur_a * WEATHER_SOFTEN;
+
+            float c[3];
+            for (int k = 0; k < 3; k++) {
+                float blurred = alpha_sum > 0 ? sum[k] / alpha_sum : s[k];
+                float sharp = s[3] > 0 ? s[k] : blurred;
+                c[k] = sharp * (1.0f - WEATHER_SOFTEN) + blurred * WEATHER_SOFTEN;
+            }
+
+            float grey = c[0] * 0.30f + c[1] * 0.59f + c[2] * 0.11f;
+            for (int k = 0; k < 3; k++) {
+                float v = c[k] + (grey - c[k]) * WEATHER_DESATURATE;
+                v = v + (mid[k] - v) * WEATHER_FLATTEN;
+                d[k] = (u8)(v < 0 ? 0 : (v > 255 ? 255 : v));
+            }
+            d[3] = (u8)(a * 255.0f);
+        }
+    }
+
+    recomp_free(src);
+}
+
 static int decode(IconSheet id, u16 anim, CachedIcon* out) {
     Sheet* s = &sheets[id];
     int sprite = first_sprite(s, anim);
@@ -168,6 +229,8 @@ static int decode(IconSheet id, u16 anim, CachedIcon* out) {
         rgba[i * 4 + 2] = (u8)((b5 << 3) | (b5 >> 2));
         rgba[i * 4 + 3] = (c & 1) ? 255 : 0;
     }
+
+    weather_icon(rgba, w, h);
 
     out->texture = recompui_create_texture_rgba32(rgba, w, h);
     out->width = (u8)w;

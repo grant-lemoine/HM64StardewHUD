@@ -28,9 +28,9 @@ extern void initializePlayerHeldItem(void);
 #define SLOT_GAP       3.0f
 #define ACTIVE_GAP    10.0f
 
-static RecompuiColor col_slot_bg     = { 255, 226, 170, 235 };
-static RecompuiColor col_active_edge = { 250, 190,  40, 255 };
-static RecompuiColor col_focus_tab   = { 250, 190,  40, 255 };
+static RecompuiColor col_slot_bg     = { 236, 214, 174, 212 };
+static RecompuiColor col_active_edge = { 214, 168,  76, 255 };
+static RecompuiColor col_focus_tab   = { 214, 168,  76, 255 };
 
 #define ROW_TOOLS 0
 #define ROW_ITEMS 1

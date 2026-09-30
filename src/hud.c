@@ -1,4 +1,4 @@
-﻿// Stardew Valley-style HUD for Harvest Moon 64: Recompiled.
+// Stardew Valley-style HUD for Harvest Moon 64: Recompiled.
 //
 // Phase 1: a clock/date/weather panel and gold counter in the top-right corner, and vertical
 // health and energy (stamina) bars in the bottom-right corner. Everything is drawn with RecompUI
@@ -23,13 +23,13 @@
 
 // --- Palette (Stardew's parchment-and-wood look) ---
 
-RecompuiColor col_panel_bg     = { 255, 214, 147, 245 }; // parchment
-RecompuiColor col_panel_border = { 133,  67,  28, 255 }; // dark wood
-RecompuiColor col_text         = {  86,  22,  12, 255 }; // dark brown ink
-static RecompuiColor col_bar_trough   = {  60,  30,  20, 220 };
-static RecompuiColor col_energy_high  = {  95, 190,  60, 255 };
-static RecompuiColor col_energy_mid   = { 230, 200,  40, 255 };
-static RecompuiColor col_energy_low   = { 220,  60,  40, 255 };
+RecompuiColor col_panel_bg     = { 232, 206, 160, 222 }; // faded parchment
+RecompuiColor col_panel_border = { 112,  74,  46, 235 }; // worn wood
+RecompuiColor col_text         = {  84,  46,  32, 255 }; // faded brown ink
+static RecompuiColor col_bar_trough   = {  58,  40,  32, 200 };
+static RecompuiColor col_energy_high  = { 112, 166,  80, 255 };
+static RecompuiColor col_energy_mid   = { 204, 178,  72, 255 };
+static RecompuiColor col_energy_low   = { 188,  80,  62, 255 };
 
 // --- Layout constants, in DP before scaling ---
 
@@ -145,9 +145,9 @@ static const char* season_name(u8 season) {
 
 // Stand-in for a weather icon until Phase 2 adds real artwork: a colored dot.
 static RecompuiColor weather_color(u8 weather) {
-    RecompuiColor sunny   = { 250, 190,  40, 255 };
-    RecompuiColor rain    = {  70, 130, 220, 255 };
-    RecompuiColor snow    = { 235, 240, 250, 255 };
+    RecompuiColor sunny   = { 224, 178,  72, 255 };
+    RecompuiColor rain    = {  86, 124, 180, 255 };
+    RecompuiColor snow    = { 218, 220, 226, 255 };
     RecompuiColor typhoon = { 100, 100, 120, 255 };
     RecompuiColor unknown = { 160, 160, 160, 255 };
 
@@ -217,7 +217,7 @@ void style_panel(RecompuiResource panel) {
 RecompuiResource make_label(RecompuiResource parent, const char* text) {
     RecompuiResource label = recompui_create_label(hud_context, parent, text, LABELSTYLE_NORMAL);
     recompui_set_color(label, &col_text);
-    recompui_set_font_weight(label, 700);
+    recompui_set_font_weight(label, 600);
     recompui_set_text_align(label, TEXT_ALIGN_CENTER);
     return label;
 }
