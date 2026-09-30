@@ -59,6 +59,14 @@ options = [ "On", "Off" ]
 default = "On"
 
 [[manifest.config_options]]
+id = "show_toolbar"
+name = "Show Toolbar"
+description = "Show the toolbar along the bottom: your equipped tool and rucksack tools on top, the item in your hands and your belongings below."
+type = "Enum"
+options = [ "On", "Off" ]
+default = "On"
+
+[[manifest.config_options]]
 id = "show_health"
 name = "Show Health Bar"
 description = "Show the health bar (H). It shows HM64's hidden fatigue: it drains when you work at night or in bad weather, and if it empties you'll be sick the next day."

@@ -17,11 +17,13 @@
 #include "game/weather.h"
 #include "mainLoop.h"
 
+#include "hud.h"
+
 // --- Palette (Stardew's parchment-and-wood look) ---
 
-static RecompuiColor col_panel_bg     = { 255, 214, 147, 245 }; // parchment
-static RecompuiColor col_panel_border = { 133,  67,  28, 255 }; // dark wood
-static RecompuiColor col_text         = {  86,  22,  12, 255 }; // dark brown ink
+RecompuiColor col_panel_bg     = { 255, 214, 147, 245 }; // parchment
+RecompuiColor col_panel_border = { 133,  67,  28, 255 }; // dark wood
+RecompuiColor col_text         = {  86,  22,  12, 255 }; // dark brown ink
 static RecompuiColor col_bar_trough   = {  60,  30,  20, 220 };
 static RecompuiColor col_energy_high  = {  95, 190,  60, 255 };
 static RecompuiColor col_energy_mid   = { 230, 200,  40, 255 };
@@ -29,9 +31,6 @@ static RecompuiColor col_energy_low   = { 220,  60,  40, 255 };
 
 // --- Layout constants, in DP before scaling ---
 
-#define EDGE_MARGIN        16.0f
-#define PANEL_BORDER        4.0f
-#define PANEL_RADIUS        8.0f
 #define CLOCK_PANEL_WIDTH 170.0f
 #define BAR_WIDTH          26.0f
 #define BAR_GAP            10.0f
@@ -56,8 +55,8 @@ static RecompuiColor col_energy_low   = { 220,  60,  40, 255 };
 
 // --- UI handles ---
 
-static RecompuiContext hud_context;
-static RecompuiResource hud_root;
+RecompuiContext hud_context;
+RecompuiResource hud_root;
 
 static RecompuiResource clock_panel;
 static RecompuiResource date_label;
@@ -85,6 +84,7 @@ static int hud_initialized = 0;
 static float hud_scale = -1.0f;
 static float hud_opacity = 0.0f;
 static int health_shown = -1;
+static int toolbar_shown = -1;
 static int pulse_frame = 0;
 
 // Last values pushed to the UI, so text and layout are only touched when something changes.
@@ -190,6 +190,10 @@ static int config_hud_enabled(void) {
     return recomp_get_config_u32("hud_enabled") == 0;
 }
 
+static int config_show_toolbar(void) {
+    return recomp_get_config_u32("show_toolbar") == 0;
+}
+
 static int config_show_health(void) {
     return recomp_get_config_u32("show_health") == 0;
 }
@@ -200,7 +204,7 @@ static float config_scale(void) {
 
 // --- Construction ---
 
-static void style_panel(RecompuiResource panel) {
+void style_panel(RecompuiResource panel) {
     recompui_set_background_color(panel, &col_panel_bg);
     recompui_set_border_color(panel, &col_panel_border);
     recompui_set_display(panel, DISPLAY_FLEX);
@@ -208,7 +212,7 @@ static void style_panel(RecompuiResource panel) {
     recompui_set_align_items(panel, ALIGN_ITEMS_CENTER);
 }
 
-static RecompuiResource make_label(RecompuiResource parent, const char* text) {
+RecompuiResource make_label(RecompuiResource parent, const char* text) {
     RecompuiResource label = recompui_create_label(hud_context, parent, text, LABELSTYLE_NORMAL);
     recompui_set_color(label, &col_text);
     recompui_set_font_weight(label, 700);
@@ -301,6 +305,8 @@ static void apply_layout(float s) {
     layout_bar(energy_trough, energy_tab, energy_caption, s);
     recompui_set_height(health_trough, HEALTH_BAR_HEIGHT * s, UNIT_DP);
 
+    toolbar_layout(s);
+
     // Force the energy bar height to be recomputed at the new scale.
     last_max_stamina = -1;
 }
@@ -356,6 +362,8 @@ static void hud_init(void) {
     health_column = make_bar_column(bars_row, "H", &health_trough, &health_fill, &health_tab, &health_caption);
 
     energy_column = make_bar_column(bars_row, "E", &energy_trough, &energy_fill, &energy_tab, &energy_caption);
+
+    toolbar_init();
 
     recompui_close_context(hud_context);
     recompui_show_context(hud_context);
@@ -499,7 +507,7 @@ void StardewHud_OnFrame(int pendingGfx) {
 
     recompui_open_context(hud_context);
 
-    float scale = config_scale();
+    float scale = config_scale() * HUD_BASE_SCALE;
     if (scale != hud_scale) {
         hud_scale = scale;
         apply_layout(scale);
@@ -511,9 +519,18 @@ void StardewHud_OnFrame(int pendingGfx) {
         recompui_set_display(health_column, want_health ? DISPLAY_FLEX : DISPLAY_NONE);
     }
 
+    int want_toolbar = config_show_toolbar();
+    if (want_toolbar != toolbar_shown) {
+        toolbar_shown = want_toolbar;
+        toolbar_set_visible(want_toolbar);
+    }
+
     if (show) {
         update_clock_panel();
         update_bars(hud_scale);
+        if (want_toolbar) {
+            toolbar_update();
+        }
     }
 
     if (hud_opacity < target) {
