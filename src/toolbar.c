@@ -50,6 +50,16 @@ static RecompuiResource row_captions_res[ROW_COUNT];
 static RecompuiResource slots[ROW_COUNT][SLOTS_PER_ROW];
 static RecompuiResource icons[ROW_COUNT][SLOTS_PER_ROW];
 
+// Tools row extras: a stack count (seed and feed bags) and a water meter (watering can).
+static RecompuiResource counts[SLOTS_PER_ROW];
+static RecompuiResource meters[SLOTS_PER_ROW];
+static RecompuiResource meter_fills[SLOTS_PER_ROW];
+static int shown_count[SLOTS_PER_ROW];
+static int shown_water[SLOTS_PER_ROW];
+
+static RecompuiColor col_meter_trough = {  58,  40,  32, 200 };
+static RecompuiColor col_meter_water  = {  86, 124, 180, 255 };
+
 static RecompuiTextureHandle blank_texture;
 static float toolbar_scale = 1.0f;
 
@@ -90,6 +100,28 @@ void toolbar_init(void) {
             icons[r][i] = recompui_create_imageview(hud_context, slot, blank_texture);
             recompui_set_display(icons[r][i], DISPLAY_NONE);
             shown_anim[r][i] = -2;
+
+            if (r == ROW_TOOLS) {
+                recompui_set_position(slot, POSITION_RELATIVE);
+
+                counts[i] = make_label(slot, "");
+                recompui_set_position(counts[i], POSITION_ABSOLUTE);
+                recompui_set_font_weight(counts[i], 700);
+                recompui_set_display(counts[i], DISPLAY_NONE);
+                shown_count[i] = -2;
+
+                meters[i] = recompui_create_element(hud_context, slot);
+                recompui_set_position(meters[i], POSITION_ABSOLUTE);
+                recompui_set_background_color(meters[i], &col_meter_trough);
+                meter_fills[i] = recompui_create_element(hud_context, meters[i]);
+                recompui_set_position(meter_fills[i], POSITION_ABSOLUTE);
+                recompui_set_left(meter_fills[i], 0.0f, UNIT_DP);
+                recompui_set_top(meter_fills[i], 0.0f, UNIT_DP);
+                recompui_set_bottom(meter_fills[i], 0.0f, UNIT_DP);
+                recompui_set_background_color(meter_fills[i], &col_meter_water);
+                recompui_set_display(meters[i], DISPLAY_NONE);
+                shown_water[i] = -2;
+            }
         }
     }
 }
@@ -118,7 +150,84 @@ void toolbar_layout(float s) {
         }
         recompui_set_margin_right(slots[r][0], (ACTIVE_GAP - SLOT_GAP) * s, UNIT_DP);
     }
+
+    for (int i = 0; i < SLOTS_PER_ROW; i++) {
+        recompui_set_right(counts[i], 3.0f * s, UNIT_DP);
+        recompui_set_bottom(counts[i], 0.0f, UNIT_DP);
+        recompui_set_font_size(counts[i], 14.0f * s, UNIT_DP);
+        recompui_set_line_height(counts[i], 16.0f * s, UNIT_DP);
+
+        recompui_set_left(meters[i], 5.0f * s, UNIT_DP);
+        recompui_set_right(meters[i], 5.0f * s, UNIT_DP);
+        recompui_set_bottom(meters[i], 3.0f * s, UNIT_DP);
+        recompui_set_height(meters[i], 4.0f * s, UNIT_DP);
+        recompui_set_border_radius(meters[i], 2.0f * s, UNIT_DP);
+        recompui_set_border_radius(meter_fills[i], 2.0f * s, UNIT_DP);
+    }
     shown_focus = -1;
+}
+
+// How many uses are left in a consumable tool (seed and feed bags), or -1 if it isn't one.
+static int tool_quantity(u8 tool) {
+    switch (tool) {
+        case TURNIP_SEEDS:        return turnipSeedsQuantity;
+        case POTATO_SEEDS:        return potatoSeedsQuantity;
+        case CABBAGE_SEEDS:       return cabbageSeedsQuantity;
+        case TOMATO_SEEDS:        return tomatoSeedsQuantity;
+        case CORN_SEEDS:          return cornSeedsQuantity;
+        case EGGPLANT_SEEDS:      return eggplantSeedsQuantity;
+        case STRAWBERRY_SEEDS:    return strawberrySeedsQuantity;
+        case MOON_DROP_SEEDS:     return moondropSeedsQuantity;
+        case PINK_CAT_MINT_SEEDS: return pinkCatMintSeedsQuantity;
+        case BLUE_MIST_SEEDS:     return blueMistSeedsQuantity;
+        case GRASS_SEEDS:         return grassSeedsQuantity;
+        case CHICKEN_FEED:        return chickenFeedQuantity;
+        default:                  return -1;
+    }
+}
+
+// Water left as a percentage, or -1. A full can holds 30 / 50 / 80 uses by upgrade level (the
+// refill amounts in player.c), and each watered tile uses one.
+static int water_percent(u8 tool) {
+    static const int capacity[3] = { 30, 50, 80 };
+    if (tool != WATERING_CAN) {
+        return -1;
+    }
+    int level = gPlayer.toolLevels[WATERING_CAN - 1];
+    int cap = capacity[level < 3 ? level : 2];
+    int uses = wateringCanUses < cap ? wateringCanUses : cap;
+    return uses * 100 / cap;
+}
+
+static void show_tool_extras(int i, u8 tool) {
+    int count = tool_quantity(tool);
+    if (count != shown_count[i]) {
+        shown_count[i] = count;
+        if (count < 0) {
+            recompui_set_display(counts[i], DISPLAY_NONE);
+        } else {
+            char buf[8];
+            int n = 0;
+            int v = count > 999 ? 999 : count;
+            if (v >= 100) buf[n++] = (char)('0' + v / 100);
+            if (v >= 10) buf[n++] = (char)('0' + (v / 10) % 10);
+            buf[n++] = (char)('0' + v % 10);
+            buf[n] = '\0';
+            recompui_set_text(counts[i], buf);
+            recompui_set_display(counts[i], DISPLAY_BLOCK);
+        }
+    }
+
+    int water = water_percent(tool);
+    if (water != shown_water[i]) {
+        shown_water[i] = water;
+        if (water < 0) {
+            recompui_set_display(meters[i], DISPLAY_NONE);
+        } else {
+            recompui_set_width(meter_fills[i], (float)water, UNIT_PERCENT);
+            recompui_set_display(meters[i], DISPLAY_BLOCK);
+        }
+    }
 }
 
 // The focused row is fully opaque with a gold caption tab; the other row is dimmed.
@@ -160,11 +269,23 @@ static void show_icon(int r, int i, int anim) {
 }
 
 void toolbar_update(void) {
+#ifdef DEBUG_TOOL_EXTRAS
+    // Test-only: seed a turnip bag and a partly filled can in memory (never saved by the test).
+    static int seeded = 0;
+    if (!seeded) {
+        seeded = 1;
+        gPlayer.toolSlots[5] = TURNIP_SEEDS;
+        turnipSeedsQuantity = 7;
+        wateringCanUses = 12;
+    }
+#endif
     show_focus();
     show_icon(0, 0, icon_anim_for_tool(gPlayer.currentTool));
+    show_tool_extras(0, gPlayer.currentTool);
     show_icon(1, 0, icon_anim_for_item(gPlayer.heldItem));
     for (int i = 0; i < 8; i++) {
         show_icon(0, i + 1, icon_anim_for_tool(gPlayer.toolSlots[i]));
+        show_tool_extras(i + 1, gPlayer.toolSlots[i]);
         show_icon(1, i + 1, icon_anim_for_item(gPlayer.belongingsSlots[i]));
     }
 }
