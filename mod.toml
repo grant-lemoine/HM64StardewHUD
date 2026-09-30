@@ -1,79 +1,77 @@
-# Config file for an example Harvest Moon 64: Recompiled mod.
+# Config file for the Stardew-Style HUD mod for Harvest Moon 64: Recompiled.
 
 # Fields that end up in the mod's manifest.
 [manifest]
 
-# Unique ID of this mod. Pick something long enough that it'll never be the same as any other mod.
-# The name displayed in the mod management menu is separate from this so this doesn't need to be human readable.
-id = "hm64_recomp_mod_template"
+# Unique ID of this mod.
+id = "hm64_stardew_hud"
 
 # Version of this mod.
-version = "1.0.0"
+version = "0.1.0"
 
-# The name that will show up for this mod in the mod menu. This should be human readable.
-display_name = "Harvest Moon 64 Mod Template"
+# The name that will show up for this mod in the mod menu.
+display_name = "Stardew-Style HUD"
 
-# The description that will show up when this mod is displayed in the mod menu. This should be human readable.
-description =  """
-This is an example mod for Harvest Moon 64: Recompiled that can be used as a template for creating mods. \
-When this mod is enabled, you will be able to adjust the time speed in the mod configuration.
+# The description that will show up when this mod is displayed in the mod menu.
+description = """
+Adds an always-on HUD in the style of Stardew Valley: a clock panel with the day, date, season, \
+weather and time in the top-right corner, a gold counter beneath it, and health and energy bars \
+in the bottom-right corner.
 
-For more details, see https://github.com/HarvestMoon64Recomp/HM64RecompModTemplate."""
+E (energy) is your stamina: tools stop working when it runs out. It grows as your maximum stamina increases.
 
-# A short description that will show up in this mod's entry in the mod list. This should be human readable and kept short
-# to prevent it from being cut off due to the limited space.
-short_description = "Scale how quickly in-game time advances."
+H (health) drains when you use tools at night or in rain or snow. It turns yellow, then red, as you \
+overwork; if it empties, you wake up sick the next morning. Sleep early and eat to recover.
+
+The HUD hides itself in menus, cutscenes, and on the title screen."""
+
+# A short description for the mod list.
+short_description = "Clock, gold, health, and energy like Stardew Valley."
 
 # Authors of this mod.
-authors = [ "Your name here" ]
+authors = [ "Grant Lemoine" ]
 
 # ID of the target recomp game.
 game_id = "hm64"
 
-# Minimum version of the target recomp (e.g. Zelda 64: Recompiled) that this mod can run on.
+# Minimum version of the target recomp that this mod can run on.
 minimum_recomp_version = "1.0.0"
 
-# Dependency mods. Each entry is the mod's ID and then an optional minimum version of the dependency mod.
-dependencies = [
-# Example dependency:
-#    "modname:1.0.0"
-]
-
-# Optional dependency mods. This has the same format as `dependencies`, but the game will still start if dependencies in this
-# list aren't present. You can query the presence of a given dependency by using `recomp_is_dependency_met` in recomputils.h.
-# Calling a function imported from an optional dependency that isn't present will trigger an error.
-optional_dependencies = [
-
-]
-
-# Native libraries (e.g. DLLs) and the functions they export.
-native_libraries = [
-# Example native library:
-#    { name = "my_native_library", funcs = ["my_native_library_function"] }
-]
+dependencies = [ ]
+optional_dependencies = [ ]
+native_libraries = [ ]
 
 # Inputs to the mod tool.
 [inputs]
-
-# Input elf file to generate a mod from.
 elf_path = "build/mod.elf"
-
-# Output mod filename.
-mod_filename = "hm64_recomp_mod_template"
-
-# Reference symbol files.
+mod_filename = "hm64_stardew_hud"
 func_reference_syms_file = "HarvestMoon64RecompSyms/hm64.us.syms.toml"
 data_reference_syms_files = [ "HarvestMoon64RecompSyms/hm64.us.datasyms.toml" ]
-
-# Additional files to include in the mod.
 additional_files = [ ]
 
+# Enum options are read back as their index, so keep "On" first.
 [[manifest.config_options]]
-id = "time_scale"
-name = "Time Speed"
-description = "Scale how quickly in-game time advances."
+id = "hud_enabled"
+name = "Show HUD"
+description = "Show or hide the Stardew-style HUD."
+type = "Enum"
+options = [ "On", "Off" ]
+default = "On"
+
+[[manifest.config_options]]
+id = "show_health"
+name = "Show Health Bar"
+description = "Show the health bar (H). It shows HM64's hidden fatigue: it drains when you work at night or in bad weather, and if it empties you'll be sick the next day."
+type = "Enum"
+options = [ "On", "Off" ]
+default = "On"
+
+[[manifest.config_options]]
+id = "hud_scale"
+name = "HUD Scale"
+description = "Scale the size of the HUD."
 type = "Number"
-min = 0.10
+min = 0.50
 max = 2.00
 step = 0.05
 precision = 2

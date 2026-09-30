@@ -1,59 +1,42 @@
-# Harvest Moon 64 Recomp
+# Stardew-Style HUD for Harvest Moon 64: Recompiled
 
-A recompilation/modding project for **Harvest Moon 64** using the N64 recompilation toolchain.
+Adds a Stardew Valley-style HUD to [Harvest Moon 64: Recompiled](https://github.com/HarvestMoon64Recomp/HarvestMoon64Recomp).
 
-This repository contains the mod source, build files, headers, and configuration needed to build a `.nrm` mod for Harvest Moon 64 Recomp.
+Vanilla HM64 has no gameplay HUD; the clock and gold only appear inside the pause menu. This mod draws
+an always-on overlay with RecompUI instead:
 
-### Writing mods
+- **Top-right:** clock panel with day and date (`Mon. 12`), a weather dot and season, and the time in half-hour steps (`9:30 am`), with a gold counter underneath.
+- **Bottom-right:** energy bar (**E**, stamina) that shifts green → yellow → red and grows taller as max stamina rises from power berries, and a health bar (**H**).
+  - **E:** tools stop working once it drops below the tool's stamina cost.
+  - **H** is `100 − fatigue`, HM64's hidden overwork meter. It only drains when you use tools at night (outside 6 AM–6 PM) or in rain or snow, and recovers with sleep (more if you go to bed early) and some food. It's green above 50, turns yellow at 50 and red at 25 (the game's two "fatigued" warnings), and pulses while red. If it hits 0 you get a sick day the next morning.
+- Hidden in menus, cutscenes, the title screen, and before a save is loaded; fades in and out.
 
-This project uses the N64 recomp modding framework. Mods can hook or patch existing game functions with `RECOMP_HOOK`, `RECOMP_HOOK_RETURN`, and `RECOMP_PATCH`.
+Settings in the mod menu: show/hide the HUD, show/hide the health bar, and HUD scale.
 
-Use this repository as the place for Harvest Moon 64-specific patches, quality-of-life changes, renderer fixes, gameplay tweaks, and configuration-driven options.
+## How it works
 
-### Tools
+`src/hud.c` hooks `gfxRetraceCallback` (runs once per frame), reads game globals from the
+[decompilation](https://github.com/harvestwhisperer/hm64-decomp) headers (`gHour`, `gGold`,
+`gPlayer.currentStamina`, and so on), and updates a RecompUI context that doesn't capture input. Text and
+layout are only updated when a value changes.
 
-You'll need to install `clang` and `make` to build the mod.
+Visibility is decided by `mainLoopCallbackCurrentIndex` (the game's state machine; `MAIN_GAME` is free
+roam) and the `CUTSCENE_ACTIVE` bit of `gCutsceneFlags`.
 
-* On Windows, using [Chocolatey](https://chocolatey.org/) to install both is recommended. The packages are `llvm` and `make`.
-  * LLVM 19.1.0 does not support MIPS correctly for this workflow. LLVM/Clang 18.1.8 is recommended.
-  * With Chocolatey, you can install that version with `--version 18.1.8`, or you can download the LLVM 18.1.8 release directly.
-* On Linux, install `clang`, `make`, and `lld` through your distro's package manager.
-  * On Debian/Ubuntu-based distros, the linker package is usually `lld`.
-* On macOS, install `llvm` and `make` through Homebrew.
-  * Apple Clang will not work because this build needs a MIPS target.
+## Building
 
-On Linux and macOS, make sure the `zip` utility is also installed.
+Requires LLVM/Clang **18.1.8** (19.x doesn't work for MIPS here), GNU make, and `RecompModTool` from the
+[N64Recomp releases](https://github.com/N64Recomp/N64Recomp/releases). From the parent folder:
 
-You'll also need `RecompModTool` from the [N64Recomp](https://github.com/N64Recomp/N64Recomp) releases. You can also build it yourself from the N64Recomp repository.
-
-### Building
-
-* Run `make` to build the mod code.
-  * You can pass a job count, such as `make -j8`, to build faster.
-* Run `RecompModTool` with `mod.toml` as the first argument and the build directory as the second argument:
-
-```sh
-RecompModTool mod.toml build
+```powershell
+.\build.ps1 -ModDir .\HM64StardewHUD
 ```
 
-This will produce the mod's `.nrm` file in the `build` folder.
+Or manually: `make`, then `RecompModTool mod.toml build`. The output is `build/hm64_stardew_hud.nrm`;
+drag it onto the game window to install.
 
-On macOS, you may need to specify the Homebrew LLVM tools manually:
+## Roadmap
 
-```sh
-CC=/opt/homebrew/opt/llvm/bin/clang LD=/opt/homebrew/opt/llvm/bin/ld.lld make
-```
-
-### Updating Harvest Moon 64 symbols or headers
-
-If the Harvest Moon 64 recomp/decompilation symbols change, the mod may need updated symbol files or headers.
-
-General process:
-
-* Build the matching Harvest Moon 64 ELF or symbol source used by the recomp project.
-* Build [N64Recomp](https://github.com/N64Recomp/N64Recomp) and copy the `N64Recomp` executable to the root of this repository if needed.
-* Generate or update the symbol files used by this mod.
-* Update the corresponding headers and function names referenced by the mod source.
-* Rebuild the mod.
-
-If `RecompModTool` fails because a patched function does not exist in the original ROM, the function name may have changed. Find the function at the same address in the updated map or symbol file, then update the hook or patch name in the mod source.
+1. ~~Clock/date/weather/gold panel and energy bar~~ (this version)
+2. Toolbar along the bottom showing the equipped tool and rucksack slots (`gPlayer.currentTool`, `toolSlots`, `heldItem`); needs an icon strategy
+3. Optional: switch the equipped tool from the toolbar without opening the pause menu
