@@ -18,6 +18,10 @@ extern RecompuiColor col_text;
 #define PANEL_BORDER   4.0f
 #define PANEL_RADIUS   8.0f
 
+// Current fade of the whole HUD (0..1). RmlUi's opacity is inherited, not multiplied: a child that
+// sets its own opacity ignores hud_root's fade, so such children must multiply this in themselves.
+extern float hud_opacity;
+
 void style_panel(RecompuiResource panel);
 RecompuiResource make_label(RecompuiResource parent, const char* text);
 
@@ -26,5 +30,6 @@ void toolbar_init(void);
 void toolbar_layout(float scale);
 void toolbar_update(void);
 void toolbar_set_visible(int visible);
+void toolbar_apply_opacity(float hud_fade);
 
 #endif

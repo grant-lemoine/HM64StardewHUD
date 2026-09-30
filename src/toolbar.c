@@ -230,16 +230,22 @@ static void show_tool_extras(int i, u8 tool) {
     }
 }
 
-// The focused row is fully opaque with a gold caption tab; the other row is dimmed.
+// The focused row has a gold caption tab; the other row is dimmed (see toolbar_apply_opacity).
 static void show_focus(void) {
     if (shown_focus == focused_row) {
         return;
     }
     shown_focus = focused_row;
     for (int r = 0; r < ROW_COUNT; r++) {
-        int focused = r == focused_row;
-        recompui_set_opacity(rows[r], focused ? 1.0f : UNFOCUSED_OPACITY);
-        recompui_set_background_color(row_tabs[r], focused ? &col_focus_tab : &col_panel_bg);
+        recompui_set_background_color(row_tabs[r], r == focused_row ? &col_focus_tab : &col_panel_bg);
+    }
+}
+
+// Row opacity has to include the HUD fade itself: RmlUi opacity is inherited, so a row that sets its
+// own value would otherwise stay visible when the rest of the HUD fades out.
+void toolbar_apply_opacity(float hud_fade) {
+    for (int r = 0; r < ROW_COUNT; r++) {
+        recompui_set_opacity(rows[r], hud_fade * (r == focused_row ? 1.0f : UNFOCUSED_OPACITY));
     }
 }
 
@@ -283,10 +289,28 @@ void toolbar_update(void) {
     show_icon(0, 0, icon_anim_for_tool(gPlayer.currentTool));
     show_tool_extras(0, gPlayer.currentTool);
     show_icon(1, 0, icon_anim_for_item(gPlayer.heldItem));
+
+    // Show the rucksack packed left, skipping empty slots. Equipping from the pause menu leaves a
+    // hole where the tool or item used to sit; drawing slots in place made that look like a gap
+    // right after the hand slot. Packed order is also the order the D-pad rotates through.
+    int t = 1, b = 1;
     for (int i = 0; i < 8; i++) {
-        show_icon(0, i + 1, icon_anim_for_tool(gPlayer.toolSlots[i]));
-        show_tool_extras(i + 1, gPlayer.toolSlots[i]);
-        show_icon(1, i + 1, icon_anim_for_item(gPlayer.belongingsSlots[i]));
+        if (gPlayer.toolSlots[i] != 0) {
+            show_icon(0, t, icon_anim_for_tool(gPlayer.toolSlots[i]));
+            show_tool_extras(t, gPlayer.toolSlots[i]);
+            t++;
+        }
+        if (gPlayer.belongingsSlots[i] != 0) {
+            show_icon(1, b, icon_anim_for_item(gPlayer.belongingsSlots[i]));
+            b++;
+        }
+    }
+    for (; t < SLOTS_PER_ROW; t++) {
+        show_icon(0, t, -1);
+        show_tool_extras(t, 0);
+    }
+    for (; b < SLOTS_PER_ROW; b++) {
+        show_icon(1, b, -1);
     }
 }
 

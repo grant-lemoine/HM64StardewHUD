@@ -84,10 +84,11 @@ static RecompuiResource energy_caption;
 
 static int hud_initialized = 0;
 static float hud_scale = -1.0f;
-static float hud_opacity = 0.0f;
+float hud_opacity = 0.0f;
 static int health_shown = -1;
 static int toolbar_shown = -1;
 static int pulse_frame = 0;
+static float health_pulse = 1.0f;
 
 // Last values pushed to the UI, so text and layout are only touched when something changes.
 static int last_day_of_week = -1;
@@ -484,15 +485,16 @@ static void update_bars(float s) {
                                                  : &col_energy_high);
     }
 
-    // Pulse the health fill (triangle wave on its opacity) once a sick day is close.
+    // Pulse the health fill (triangle wave on its opacity) once a sick day is close. Applied together
+    // with the HUD fade in StardewHud_OnFrame.
     if (health <= HEALTH_PULSE_BELOW) {
         pulse_frame = (pulse_frame + 1) % HEALTH_PULSE_FRAMES;
         float phase = (float)pulse_frame / (float)HEALTH_PULSE_FRAMES;
         float wave = phase < 0.5f ? phase * 2.0f : (1.0f - phase) * 2.0f;
-        recompui_set_opacity(health_fill, 0.35f + 0.65f * wave);
-    } else if (pulse_frame != 0) {
+        health_pulse = 0.35f + 0.65f * wave;
+    } else {
         pulse_frame = 0;
-        recompui_set_opacity(health_fill, 1.0f);
+        health_pulse = 1.0f;
     }
 }
 
@@ -544,6 +546,9 @@ void StardewHud_OnFrame(int pendingGfx) {
         hud_opacity = clamp01(hud_opacity - FADE_STEP);
     }
     recompui_set_opacity(hud_root, hud_opacity);
+    // Children with their own opacity don't inherit the root's; fade them explicitly.
+    recompui_set_opacity(health_fill, hud_opacity * health_pulse);
+    toolbar_apply_opacity(hud_opacity);
 
     recompui_close_context(hud_context);
 }
