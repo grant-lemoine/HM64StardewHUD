@@ -25,18 +25,24 @@ roam) and the `CUTSCENE_ACTIVE` bit of `gCutsceneFlags`.
 
 ## Building
 
-Requires LLVM/Clang **18.1.8** (19.x doesn't work for MIPS here), GNU make, and `RecompModTool` from the
-[N64Recomp releases](https://github.com/N64Recomp/N64Recomp/releases). From the parent folder:
+Clone with submodules (`git clone --recurse-submodules`), then install:
 
-```powershell
-.\build.ps1 -ModDir .\HM64StardewHUD
+* LLVM/Clang **18.1.8** and GNU make. LLVM 19.x doesn't support MIPS correctly for this workflow.
+* `RecompModTool` from the [N64Recomp releases](https://github.com/N64Recomp/N64Recomp/releases). Put it in
+  the repo root; `*.exe` is git-ignored.
+
+Then:
+
+```sh
+make
+./RecompModTool mod.toml build
 ```
 
-Or manually: `make`, then `RecompModTool mod.toml build`. The output is `build/hm64_stardew_hud.nrm`;
-drag it onto the game window to install.
+The output is `build/hm64_stardew_hud.nrm`; drag it onto the game window to install. On Windows,
+RecompModTool zips the mod by running `powershell`, so PowerShell must be on your `PATH`.
 
 ## Roadmap
 
-1. ~~Clock/date/weather/gold panel and energy bar~~ (this version)
+1. ~~Clock/date/weather/gold panel, energy and health bars~~ (this version)
 2. Toolbar along the bottom showing the equipped tool and rucksack slots (`gPlayer.currentTool`, `toolSlots`, `heldItem`); needs an icon strategy
 3. Optional: switch the equipped tool from the toolbar without opening the pause menu
