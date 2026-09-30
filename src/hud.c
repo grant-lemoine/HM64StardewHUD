@@ -16,6 +16,8 @@
 #include "game/time.h"
 #include "game/weather.h"
 #include "mainLoop.h"
+#include "assetIndices/entities.h"
+#include "system/entity.h"
 
 #include "hud.h"
 
@@ -375,21 +377,24 @@ static void hud_init(void) {
 
 // The HUD shows during free-roam gameplay and conversations, and hides in menus (which have their
 // own clock), cutscenes, the title screen, and before a save is loaded.
+//
+// Free roam can't just check CUTSCENE_ACTIVE: some areas run a background cutscene script while you
+// walk around (e.g. Greg waiting by the main mountain pond until you get the fishing pole). Instead it
+// uses the same test mainGameLoopCallback does before updating the player: a cutscene that takes
+// control of the farmer detaches the player entity from the map (or pauses it).
 static int hud_should_show(void) {
     if (gMaximumStamina == 0) {
-        return 0;
-    }
-    if (gCutsceneFlags & CUTSCENE_ACTIVE) {
         return 0;
     }
 
     switch (mainLoopCallbackCurrentIndex) {
         case MAIN_GAME:
+            return checkEntityMapSpaceDependent(ENTITY_PLAYER) && !checkEntityPaused(ENTITY_PLAYER);
         case DIALOGUE:
         case MESSAGE_BOX:
         case DIALOGUE_SELECTION:
         case SHOP_DIALOGUE:
-            return 1;
+            return !(gCutsceneFlags & CUTSCENE_ACTIVE);
         default:
             return 0;
     }

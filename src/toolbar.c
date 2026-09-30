@@ -9,7 +9,6 @@
 
 #include "common.h"
 #include "assetIndices/sfxs.h"
-#include "game/cutscenes.h"
 #include "game/gameAudio.h"
 #include "game/gameStatus.h"
 #include "game/items.h"
@@ -245,13 +244,14 @@ static int switching_allowed(void) {
     return recomp_get_config_u32("hud_enabled") == 0
         && recomp_get_config_u32("show_toolbar") == 0
         && mainLoopCallbackCurrentIndex == MAIN_GAME
-        && !(gCutsceneFlags & CUTSCENE_ACTIVE)
         && !(gPlayer.flags & PLAYER_RIDING_HORSE)
         && !checkDailyEventBit(BLOCK_BUTTON_USAGE);
 }
 
-// handlePlayerInput only runs while the player is idle (actionHandler == 0), so switching can't
-// interrupt a swing, throw, meal, or cutscene. The game doesn't use the D-pad in free roam.
+// handlePlayerInput only runs while the player is idle (actionHandler == 0) and in control (not taken
+// over by a cutscene), so switching can't interrupt a swing, throw, meal, or scripted scene. There's
+// no CUTSCENE_ACTIVE check: background scripts like Greg's by the mountain pond set it while you're
+// free to act. The game doesn't use the D-pad in free roam.
 RECOMP_HOOK("handlePlayerInput")
 void StardewHud_OnPlayerInput(void) {
     if (!switching_allowed()) {
