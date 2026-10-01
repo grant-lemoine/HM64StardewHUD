@@ -15,18 +15,22 @@ display_name = "Stardew-Style HUD"
 # The description that will show up when this mod is displayed in the mod menu.
 description = """
 Adds an always-on HUD in the style of Stardew Valley: a clock panel with the day, date, season, \
-weather and time in the top-right corner, a gold counter beneath it, and health and energy bars \
-in the bottom-right corner.
+weather and time in the top-right corner, a gold counter beneath it, health and energy bars in the \
+bottom-right corner, and a toolbar along the bottom.
 
 E (energy) is your stamina: tools stop working when it runs out. It grows as your maximum stamina increases.
 
 H (health) drains when you use tools at night or in rain or snow. It turns yellow, then red, as you \
 overwork; if it empties, you wake up sick the next morning. Sleep early and eat to recover.
 
+The toolbar shows your tools on top and your items below, with seed counts and the watering can's water. \
+Switch without the pause menu using the D-pad: up/down picks a row, left/right swaps the next tool or item \
+into your hands.
+
 The HUD hides itself in menus, cutscenes, and on the title screen."""
 
 # A short description for the mod list.
-short_description = "Clock, gold, health, and energy like Stardew Valley."
+short_description = "Stardew-style clock, bars, and a D-pad toolbar."
 
 # Authors of this mod.
 authors = [ "Grant Lemoine" ]

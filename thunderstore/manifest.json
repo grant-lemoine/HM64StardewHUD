@@ -1,0 +1,7 @@
+{
+    "name": "Stardew_Style_HUD",
+    "version_number": "0.1.0",
+    "website_url": "https://github.com/grant-lemoine/HM64StardewHUD",
+    "description": "Stardew Valley-style HUD: clock, gold, energy and health bars, and a D-pad toolbar for switching tools and items without the pause menu.",
+    "dependencies": []
+}
